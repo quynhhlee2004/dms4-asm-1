@@ -1,0 +1,6 @@
+{
+  "name": "Aesthetic Photo Journal",
+  "description": "An aesthetic photo-journaling web application featuring a split layout with dynamic themes, iTunes music stream, and custom Gemini-powered Vietnamese Gen Z poetry.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
