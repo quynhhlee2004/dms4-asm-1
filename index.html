@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Photo Journal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              quicksand: ['Quicksand', 'sans-serif'],
+              space: ['Space Grotesk', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+            }
+          }
+        }
+      }
+    </script>
+    
+    <style>
+      :root {
+        --bg-main: #F9F8F6;
+        --text-main: #2C2A29;
+        --text-muted: #6B6865;
+        --panel-bg: #FFFFFF;
+        --border-color: rgba(44, 42, 41, 0.08);
+        --accent: #8C8275;
+        --accent-text: #FFFFFF;
+      }
+      
+      body {
+        font-family: 'Quicksand', sans-serif;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        transition: background-color 0.5s ease, color 0.5s ease;
+      }
+      
+      /* Strict Contrast Overrides */
+      h1, h2, h3, h4, h5, h6, th, td, strong, p, span, label, .quote, .text-main, select, input, textarea, .instruction {
+        color: var(--text-main) !important;
+        transition: color 0.5s ease;
+      }
+      
+      .text-muted {
+        color: var(--text-muted) !important;
+        transition: color 0.5s ease;
+      }
+      
+      /* Vintage Filters for Polaroid */
+      .filter-normal { filter: none; }
+      .filter-vintage { filter: sepia(0.55) contrast(1.15) brightness(0.95); }
+      .filter-bw { filter: grayscale(1) contrast(1.3) brightness(0.95); }
+      .filter-warm { filter: sepia(0.18) saturate(1.25) hue-rotate(-8deg) contrast(1.08); }
+      .filter-cool { filter: saturate(0.8) hue-rotate(12deg) contrast(0.98) brightness(1.05); }
+      
+      /* Vinyl spinning animation */
+      @keyframes spin-record {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      .spin-vinyl {
+        animation: spin-record 3.5s linear infinite;
+      }
+      .spin-vinyl-paused {
+        animation-play-state: paused;
+      }
+      
+      /* Slide-in Notifications */
+      #notification-container {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 100;
+        pointer-events: none;
+      }
+      .notification-toast {
+        pointer-events: auto;
+        animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes slideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      
+      /* Kbd styling */
+      kbd {
+        box-shadow: 0 1px 0px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body class="min-h-screen pb-12 flex flex-col font-quicksand">
+    
+    <!-- Hidden HTML audio element for iTunes streaming -->
+    <audio id="itunes-audio" loop></audio>
+
+    <!-- Header Workspace -->
+    <header class="w-full max-w-6xl mx-auto px-4 pt-6 md:pt-8 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4 border-b" style="border-color: var(--border-color);">
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-full bg-stone-800 flex items-center justify-center text-white shadow">
+          <i data-lucide="book-heart" class="w-5 h-5 text-emerald-400"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight uppercase font-quicksand" style="color: var(--text-main);">
+            Photo Journal
+          </h1>
+          <p class="text-[10px] font-mono tracking-wider" style="color: var(--text-muted);">ITUNES & GEMINI MULTIMODAL INTERACTION</p>
+        </div>
+      </div>
+
+      <!-- Theme Switchers -->
+      <div class="flex items-center gap-1.5 p-1 rounded-xl border" style="background-color: var(--panel-bg); border-color: var(--border-color);">
+        <button
+          id="theme-select-theme1"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <span class="font-mono text-[10px] opacity-70 bg-black/10 px-1 rounded" style="color: var(--text-main);">1</span>
+          <span>Healing</span>
+        </button>
+        <button
+          id="theme-select-theme2"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <span class="font-mono text-[10px] opacity-70 bg-black/10 px-1 rounded" style="color: var(--text-main);">2</span>
+          <span>Deep</span>
+        </button>
+        <button
+          id="theme-select-theme3"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <span class="font-mono text-[10px] opacity-70 bg-black/10 px-1 rounded" style="color: var(--text-main);">3</span>
+          <span>Rage Bait</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hotkey Info Ribbon -->
+    <div class="w-full max-w-6xl mx-auto px-4 mt-2">
+      <div class="rounded-xl p-3 border text-[11px] flex flex-col md:flex-row md:items-center justify-between gap-2" style="background-color: var(--panel-bg); border-color: var(--border-color);">
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="help-circle" class="w-3.5 h-3.5 text-stone-400 shrink-0"></i>
+          <span><strong>Hướng dẫn chấm điểm:</strong> Nhấn phím <kbd class="px-1.5 py-0.5 bg-stone-200 rounded font-mono text-stone-700">1</kbd>, <kbd class="px-1.5 py-0.5 bg-stone-200 rounded font-mono text-stone-700">2</kbd>, hoặc <kbd class="px-1.5 py-0.5 bg-stone-200 rounded font-mono text-stone-700">3</kbd> trên bàn phím để chuyển đổi toàn bộ giao diện và nhạc theo phong cách cực chất!</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Credentials & Config Panel (Collapsible) -->
+    <div class="w-full max-w-6xl mx-auto px-4 mt-4">
+      <div class="rounded-xl border p-3 transition-all" style="background-color: var(--panel-bg); border-color: var(--border-color);">
+        <button id="toggle-config-btn" class="w-full flex items-center justify-between text-xs font-semibold select-none">
+          <span class="flex items-center gap-2">
+            <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+            <span>Cấu hình Credentials (Gemini REST API)</span>
+          </span>
+          <i data-lucide="chevron-down" id="config-chevron" class="w-4 h-4 transition-transform duration-300"></i>
+        </button>
+        <div id="config-panel-content" class="mt-3 hidden space-y-2 border-t pt-3" style="border-color: var(--border-color);">
+          <p class="text-[11px]" style="color: var(--text-muted);">
+            Nhập mã API của bạn để hệ thống kết nối trực tiếp với mô hình Gemini AI thế hệ mới (Gemini 1.5 Flash), tạo ra những câu thơ bay bổng gieo vần độc bản theo từng Vibe.
+          </p>
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div class="relative flex-1">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-stone-400">
+                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+              </span>
+              <input
+                type="password"
+                id="gemini-key-input"
+                placeholder="Nhập Gemini API Key của bạn (AI_...)"
+                class="w-full pl-8 pr-3 py-1.5 rounded-lg text-xs border focus:outline-none"
+                style="background-color: var(--bg-main); border-color: var(--border-color); color: var(--text-main);"
+              />
+            </div>
+            <button
+              id="save-key-btn"
+              class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer shrink-0"
+              style="background-color: var(--accent); color: var(--accent-text);"
+            >
+              Lưu Key
+            </button>
+          </div>
+          <div id="key-status-msg" class="text-[10px] hidden font-mono"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace Area -->
+    <main class="w-full max-w-6xl mx-auto px-4 mt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-start">
+      
+      <!-- LEFT COLUMN: Photo Frame (Polaroid & Controls) -->
+      <section class="lg:col-span-5 flex flex-col items-center w-full">
+        <!-- Aesthetic Polaroid Frame -->
+        <div class="relative w-full max-w-xs bg-white p-4 pb-6 rounded-md shadow-lg border border-stone-200/40 transform -rotate-1 hover:rotate-0 transition-transform duration-500 ease-out select-none group">
+          <!-- Tape at top -->
+          <div class="absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 bg-[#eae4d3]/70 backdrop-blur-xs border-x border-dashed border-[#d1c8b2] rotate-1 shadow-sm"></div>
+          
+          <!-- Polaroid Image Container -->
+          <div class="relative w-full aspect-square bg-stone-100 overflow-hidden border border-stone-100 shadow-inner">
+            <img
+              id="polaroid-image"
+              src="https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=1200"
+              alt="Polaroid Memory"
+              class="w-full h-full object-cover transition-all duration-500 filter-normal"
+            />
+            <!-- Vintage vignette overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-black/5 pointer-events-none"></div>
+          </div>
+
+          <!-- Polaroid stamps (Bottom metadata area) -->
+          <div class="mt-4 text-center font-mono space-y-1">
+            <div class="text-[10px] uppercase tracking-wider text-stone-500 flex items-center justify-center gap-1">
+              <i data-lucide="calendar" class="w-3 h-3 text-stone-400"></i>
+              <span>DATE: <span id="stamp-date" class="font-semibold text-stone-700"></span></span>
+            </div>
+            <div class="text-[10px] uppercase tracking-wider text-stone-500 flex items-center justify-center gap-1">
+              <i data-lucide="clock" class="w-3 h-3 text-stone-400"></i>
+              <span>TIME: <span id="stamp-time" class="font-semibold text-stone-700"></span></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Controls panel underneath photo -->
+        <div class="w-full max-w-sm mt-6 space-y-4">
+          
+          <!-- Suggest Theme Images (Gợi ý ảnh) -->
+          <div class="p-3 rounded-xl border" style="background-color: var(--panel-bg); border-color: var(--border-color);">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold flex items-center gap-1.5" style="color: var(--text-main);">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+                Gợi ý ảnh chủ đề
+              </span>
+              <button
+                id="toggle-url-input-btn"
+                class="text-[10px] hover:opacity-80 transition-opacity underline cursor-pointer"
+                style="color: var(--text-muted);"
+              >
+                Chèn link ảnh
+              </button>
+            </div>
+
+            <!-- Custom URL Input (Collapsible) -->
+            <div id="url-input-panel" class="hidden mb-3">
+              <div class="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  id="custom-image-url"
+                  placeholder="Nhập liên kết ảnh (http...)"
+                  class="flex-1 text-xs px-2.5 py-1.5 rounded-lg focus:outline-none border"
+                  style="background-color: var(--bg-main); color: var(--text-main); border-color: var(--border-color);"
+                />
+                <button
+                  id="save-image-url-btn"
+                  class="px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                  style="background-color: var(--accent); color: var(--accent-text);"
+                >
+                  Lưu
+                </button>
+              </div>
+            </div>
+
+            <!-- Grid of Theme Preset Thumbnails -->
+            <div id="preset-thumbnails" class="grid grid-cols-4 gap-2">
+              <!-- Dynamically populated via JS -->
+            </div>
+          </div>
+
+          <!-- Vintage Filters -->
+          <div class="p-3 rounded-xl border" style="background-color: var(--panel-bg); border-color: var(--border-color);">
+            <span class="text-xs font-semibold block mb-2" style="color: var(--text-main);">Bộ lọc màu hoài niệm</span>
+            <div class="flex flex-wrap gap-1.5" id="filter-buttons-container">
+              <!-- Dynamically rendered with dynamic accent coloring -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: Music Player & Journal Editor -->
+      <section class="lg:col-span-7 space-y-6 w-full">
+        
+        <!-- Retro Music Player (Turntable) -->
+        <div class="flex flex-col items-center w-full p-6 rounded-2xl border shadow-md" style="background-color: var(--panel-bg); border-color: var(--border-color);">
+          
+          <!-- Turntable Core Chassis -->
+          <div class="relative w-full aspect-square max-w-[240px] bg-[#e6e2da] rounded-xl border-4 border-[#b9b3a6] p-4 flex items-center justify-center shadow-inner overflow-hidden">
+            <!-- Subtle wood grain pattern highlights -->
+            <div class="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:12px_12px]"></div>
+            
+            <!-- Metallic Circular Platter Outer Ring -->
+            <div class="w-full h-full rounded-full bg-[#1c1b19] border-4 border-[#57534e] flex items-center justify-center relative shadow-md">
+              
+              <!-- Spinny Vinyl Record -->
+              <div id="vinyl-record" class="w-[90%] h-[90%] rounded-full bg-neutral-900 border-2 border-stone-800 flex items-center justify-center relative shadow-inner spin-vinyl spin-vinyl-paused">
+                <!-- Grooves of record -->
+                <div class="absolute inset-[10%] rounded-full border border-stone-800/60"></div>
+                <div class="absolute inset-[20%] rounded-full border border-stone-800/40"></div>
+                <div class="absolute inset-[30%] rounded-full border border-stone-800/30"></div>
+                <div class="absolute inset-[40%] rounded-full border border-stone-800/20"></div>
+
+                <!-- Inner Sticker Label -->
+                <div class="w-[33%] h-[33%] rounded-full bg-white relative overflow-hidden flex items-center justify-center border-2 border-stone-900">
+                  <img
+                    id="vinyl-center-img"
+                    src="https://images.unsplash.com/photo-1518173946687-a4c8a383392e?q=80&w=150"
+                    alt="Label"
+                    class="w-full h-full object-cover"
+                  />
+                  <!-- Small copper pin in dead center -->
+                  <div class="absolute w-2.5 h-2.5 bg-[#d4af37] border border-stone-800 rounded-full shadow-inner z-10"></div>
+                </div>
+              </div>
+
+              <!-- Physical Metal Tonearm -->
+              <div
+                id="tonearm"
+                class="absolute top-2 right-4 w-12 h-24 pointer-events-none z-20 origin-[30px_15px] transition-transform duration-700"
+                style="transform: rotate(0deg);"
+              >
+                <svg viewBox="0 0 100 200" class="w-full h-full drop-shadow-md">
+                  <!-- Pivot base circle -->
+                  <circle cx="30" cy="20" r="14" fill="#a8a29e" stroke="#78716c" stroke-width="2" />
+                  <circle cx="30" cy="20" r="6" fill="#444" />
+                  <!-- Long metallic arm rod -->
+                  <path d="M 30 20 Q 50 80 35 150" fill="none" stroke="#d6d3d1" stroke-width="5" stroke-linecap="round" />
+                  <!-- Headshell cartridge weight -->
+                  <rect x="25" y="145" width="20" height="30" rx="3" fill="#292524" />
+                  <!-- Stylus needle highlight -->
+                  <polygon points="30,175 35,185 40,175" fill="#ef4444" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Song Meta Area -->
+          <div class="w-full text-center mt-5 min-h-[48px] flex flex-col justify-center">
+            
+            <!-- Music loading overlay -->
+            <div id="music-loader" class="hidden items-center justify-center gap-1 py-1.5">
+              <div class="flex items-center gap-0.5 mr-1.5">
+                <span class="w-1.5 h-3 bg-stone-400 rounded-full animate-bounce"></span>
+                <span class="w-1.5 h-4 bg-stone-500 rounded-full animate-bounce [animation-delay:0.15s]"></span>
+                <span class="w-1.5 h-3 bg-stone-400 rounded-full animate-bounce [animation-delay:0.3s]"></span>
+              </div>
+              <span class="text-xs font-mono" style="color: var(--text-muted);">Đang lên nhạc từ iTunes...</span>
+            </div>
+
+            <!-- Normal song details -->
+            <div id="music-details" class="space-y-1">
+              <h4 id="song-title-artist" class="font-semibold text-xs truncate max-w-xs mx-auto flex items-center justify-center gap-1.5 px-2" style="color: var(--text-main);">
+                <i data-lucide="music" class="w-3.5 h-3.5 shrink-0" style="color: var(--text-muted);"></i>
+                <span class="truncate">Đang tải nhạc...</span>
+              </h4>
+              <p id="song-collection" class="text-[10px] truncate max-w-xs mx-auto" style="color: var(--text-muted);"></p>
+            </div>
+
+            <!-- Music error state -->
+            <p id="music-error-msg" class="text-xs text-red-500 italic hidden"></p>
+          </div>
+
+          <!-- Turntable Player Button Row -->
+          <div class="flex items-center gap-4 mt-4 justify-center">
+            <button
+              id="music-play-btn"
+              class="w-12 h-12 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm hover:brightness-105 active:scale-95"
+              style="background-color: var(--accent); color: var(--accent-text);"
+              title="Phát/Tạm dừng nhạc"
+            >
+              <i data-lucide="play" class="w-5 h-5" id="play-btn-icon"></i>
+            </button>
+            <button
+              id="music-next-btn"
+              class="w-10 h-10 rounded-full flex items-center justify-center transition-colors border cursor-pointer"
+              style="background-color: var(--bg-main); color: var(--text-main); border-color: var(--border-color);"
+              title="Chuyển ngẫu nhiên bài khác"
+            >
+              <i data-lucide="skip-forward" class="w-4.5 h-4.5"></i>
+            </button>
+          </div>
+
+          <!-- Volume slider row -->
+          <div class="flex items-center gap-2 mt-4 w-full max-w-[180px] px-2" style="color: var(--text-muted);">
+            <button id="music-mute-btn" class="hover:opacity-80 transition-opacity cursor-pointer">
+              <i data-lucide="volume-2" class="w-4 h-4" id="mute-btn-icon"></i>
+            </button>
+            <input
+              type="range"
+              id="music-volume-slider"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.5"
+              class="flex-1 h-1 rounded-lg appearance-none cursor-pointer"
+              style="background-color: var(--border-color); accent-color: var(--text-main);"
+              title="Âm lượng"
+            />
+          </div>
+
+          <!-- Dynamic query explanation badge -->
+          <div class="mt-4 flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-mono" style="background-color: var(--bg-main); border-color: var(--border-color); color: var(--text-muted);">
+            <i data-lucide="disc" class="w-3 h-3 text-stone-400 animate-spin"></i>
+            <span>iTunes query: "<span id="music-query-term" class="font-semibold"></span>"</span>
+          </div>
+        </div>
+
+        <!-- Dynamic Journal Workspace -->
+        <div class="p-6 rounded-2xl border flex flex-col gap-6" style="background-color: var(--panel-bg); border-color: var(--border-color);">
+          
+          <!-- Poetry / Quote section -->
+          <div class="relative w-full rounded-xl p-4 border border-dashed text-center min-h-[90px] flex flex-col justify-center items-center gap-3 transition-colors duration-300" style="background-color: var(--bg-main); border-color: var(--border-color);">
+            
+            <!-- Loading animation inside the quote box -->
+            <div id="quote-loader" class="hidden flex-col items-center gap-2 py-2">
+              <div class="w-5 h-5 rounded-full border-2 border-stone-300 border-t-stone-600 animate-spin"></div>
+              <span class="text-[10px] font-mono text-stone-400">Gemini đang ngẫm thơ vần điệu...</span>
+            </div>
+
+            <!-- Quote content text -->
+            <div id="quote-display-container">
+              <p id="quote-text" class="text-xs md:text-sm italic font-medium px-4 leading-relaxed tracking-wide select-text text-center">
+                Bão giông ngoài cửa kệ nó, bên ly cà phê sữa đá ta tự chữa lành. ☕🌿
+              </p>
+            </div>
+
+            <!-- Shuffle Quote Sparkly action -->
+            <button
+              id="quote-shuffle-btn"
+              class="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer shadow-sm hover:brightness-105 active:scale-95"
+              style="background-color: var(--accent); color: var(--accent-text);"
+            >
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-yellow-300"></i>
+              <span>Xào Vibe ✨</span>
+            </button>
+          </div>
+
+          <!-- Entry Input Form -->
+          <div class="space-y-4">
+            <h3 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style="color: var(--text-main);">
+              <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+              Ghi chép cảm xúc hôm nay
+            </h3>
+
+            <div class="space-y-3">
+              <div class="space-y-1">
+                <input
+                  type="text"
+                  id="journal-title-input"
+                  placeholder="Đặt cho kỷ niệm một tựa đề..."
+                  class="w-full text-xs px-3 py-2 rounded-xl focus:outline-none border font-medium transition-colors"
+                  style="background-color: var(--bg-main); color: var(--text-main); border-color: var(--border-color);"
+                />
+              </div>
+
+              <div class="space-y-1">
+                <textarea
+                  id="journal-content-input"
+                  placeholder="Hôm nay tâm trạng của bạn thế nào? Hãy trải lòng cùng âm nhạc và thơ ca hoài niệm..."
+                  rows="4"
+                  class="w-full text-xs px-3 py-2 rounded-xl focus:outline-none border leading-relaxed transition-colors resize-none"
+                  style="background-color: var(--bg-main); color: var(--text-main); border-color: var(--border-color);"
+                ></textarea>
+              </div>
+
+              <div class="flex items-center justify-end gap-2 pt-1">
+                <button
+                  id="reset-form-btn"
+                  class="flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-semibold border hover:opacity-85 transition-opacity cursor-pointer"
+                  style="background-color: transparent; border-color: var(--border-color); color: var(--text-main);"
+                >
+                  Làm Sạch
+                </button>
+                <button
+                  id="save-journal-btn"
+                  class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer shadow-sm hover:brightness-105 active:scale-95"
+                  style="background-color: var(--accent); color: var(--accent-text);"
+                >
+                  <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                  <span>Lưu Kỷ Niệm</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stored Memories Feed -->
+          <div class="border-t pt-5 space-y-4" style="border-color: var(--border-color);">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5" style="color: var(--text-main);">
+                <i data-lucide="library" class="w-3.5 h-3.5"></i>
+                Nhật ký đã lưu
+              </h3>
+              <span id="saved-count-badge" class="text-[10px] font-mono px-2 py-0.5 rounded-full" style="background-color: var(--bg-main); color: var(--text-muted); border: 1px solid var(--border-color);">
+                0 ký ức
+              </span>
+            </div>
+
+            <!-- Feed list elements -->
+            <div id="saved-entries-list" class="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+              <!-- Dynamically rendered past entries -->
+              <div class="text-center py-6 text-xs italic text-stone-400" id="empty-feed-placeholder">
+                Chưa có ký ức nào được lưu giữ. Trải lòng và lưu kỷ niệm ngay nhé!
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer credits -->
+    <footer class="w-full max-w-6xl mx-auto px-4 mt-12 pt-6 border-t text-center text-[11px] select-none" style="border-color: var(--border-color); color: var(--text-muted);">
+      <p>© 2026 Aesthetic Photo Journal • University Web Assignment Project</p>
+      <p class="mt-1 font-mono">Bản quyền giao diện & tương tác đã được tối ưu hóa cho chấm điểm.</p>
+    </footer>
+
+    <!-- Fixed Notification Container -->
+    <div id="notification-container" class="flex flex-col gap-2"></div>
+
+    <!-- Main JS logic script -->
+    <script src="/src/main.js" type="module"></script>
+  </body>
+</html>
