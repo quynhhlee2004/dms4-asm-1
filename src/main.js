@@ -774,31 +774,33 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
 
     // 2. Perform multimodal fetch call to Gemini 3.5 Flash using dynamic key
     const restEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${userApiKey}`;
+    
+    // REQUIREMENT 1: ENABLE NATIVE JSON MODE IN THE REQUEST BODY
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            { text: promptText },
+            {
+              inlineData: {
+                mimeType: imgData.mime,
+                data: imgData.data
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    };
+
     const response = await fetch(restEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: promptText },
-              {
-                inlineData: {
-                  mimeType: imgData.mime,
-                  data: imgData.data
-                }
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          maxOutputTokens: 1000,
-          temperature: 0.7,
-          responseMimeType: "application/json"
-        }
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
@@ -808,12 +810,9 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
 
     const responseData = await response.json();
     
-    // REQUIREMENT 1: BULLETPROOF JSON PARSING
-    let rawText = responseData.candidates[0].content.parts[0].text;
-    // Remove markdown formatting completely before parsing
-    rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
-    
-    const vibeData = cleanAndParseJSON(rawText);
+    // REQUIREMENT 2: CLEAN UP THE PARSING (PURE JSON STRING GUARANTEED)
+    const rawText = responseData.candidates[0].content.parts[0].text;
+    const vibeData = JSON.parse(rawText);
 
     if (vibeData && vibeData.quoteVN) {
       // REQUIREMENT 4: SAFE UI UPDATES
