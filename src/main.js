@@ -773,8 +773,7 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
     const imgData = await getImageBase64(currentImageUrl);
 
     // 2. Perform multimodal fetch call to Gemini 1.5 Flash using dynamic key
-   const restEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`;
-    
+  const restEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${userApiKey}`;
     // REQUIREMENT 1: ENABLE NATIVE JSON MODE IN THE REQUEST BODY
     const requestBody = {
       contents: [
