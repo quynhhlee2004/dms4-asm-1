@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-// --- Emergency Hardcoded API Key Configuration ---
-const API_KEY = "YOUR_NEW_API_KEY_HERE";
-
 // --- Theme and Data Configurations ---
 const THEME_CONFIGS = {
   theme1: {
@@ -307,6 +304,7 @@ function initDarkMode() {
   };
 }
 
+// --- Dark Mode UI Sync ---
 function updateDarkModeUI() {
   const darkModeIcon = document.getElementById('dark-mode-icon');
   const darkModeText = document.querySelector('#dark-mode-toggle span');
@@ -729,16 +727,13 @@ async function handleShuffleQuote() {
     return;
   }
 
-  // Determine active key: prefer the hardcoded API_KEY constant if modified, fallback to the input value
-  let activeKey = API_KEY;
-  if (!activeKey || activeKey === "YOUR_NEW_API_KEY_HERE") {
-    activeKey = geminiApiKey.trim();
-  }
-
-  if (!activeKey) {
+  // REQUIREMENT 2: DYNAMIC API KEY FETCHING DIRECTLY FROM DOM INPUT
+  const userApiKey = document.getElementById('gemini-key-input').value.trim();
+  if (!userApiKey) {
+    alert("Vui lòng nhập Gemini API Key vào ô Cấu hình ở góc trên bạn nhé! ✨");
     quoteText.innerHTML = "⚠️ Bạn ơi! Vui lòng điền 'Gemini API Key' ở thanh cấu hình phía trên trước để trải nghiệm làm thơ GenZ xịn sò của Gemini nhé!";
     showNotification('Vui lòng cung cấp Gemini API Key!');
-    return;
+    return; // Stop execution
   }
 
   quoteLoader.classList.remove('hidden');
@@ -746,6 +741,7 @@ async function handleShuffleQuote() {
   quoteDisplayContainer.classList.add('hidden');
   quoteShuffleBtn.disabled = true;
 
+  // REQUIREMENT 3: JSON PROMPT REINFORCEMENT
   const systemInstruction = `Bạn là một GenZ Việt Nam sành điệu, chúa tể chơi chữ, tự chữa lành hoặc overthinking hoặc vô tri tùy theo vibe của chủ đề được yêu cầu.
 Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSON thô (raw JSON) tuân thủ hoàn chỉnh cấu trúc sau, KHÔNG sử dụng ký tự bao bọc mã nguồn markdown (như \`\`\`json hoặc \`\`\`), KHÔNG có văn bản thừa ngoài JSON:
 {
@@ -758,10 +754,13 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
 
   let themeInstruction = "";
   if (currentThemeId === 'theme1') {
+    // Theme 1 MUST be pure healing/self-love (strictly NO romance/relationship topics)
     themeInstruction = `Vibe: Tĩnh tâm, tự chữa lành, yêu bản thân, chill một mình, ngoan xinh yêu. TUYỆT ĐỐI KHÔNG thả thính, KHÔNG nhắc đến tình yêu lứa đôi. Trả về JSON. Tự động dịch sang Tiếng Anh. musicQuery: Tạo 1 từ khóa tiếng Việt ngắn gọn để tìm nhạc chill trên iTunes (VD: lofi acoustic, piano nhẹ nhàng, indie việt chill) dựa trên ĐÚNG nội dung bức ảnh.`;
   } else if (currentThemeId === 'theme2') {
+    // Theme 2 deep/overthinking
     themeInstruction = `Vibe: Suy, overthinking 2h sáng, cô đơn thao thức. Trả về JSON. Tự động dịch Tiếng Anh. musicQuery: Tạo 1 từ khóa tìm nhạc (VD: nhạc suy việt nam, lofi buồn) khớp với bức ảnh.`;
   } else {
+    // Theme 3 GenZ rage bait/sarcasm
     themeInstruction = `Vibe: Cọc cằn sương sương, vô tri, mỏ hỗn, flex, châm biếm deadline. Trả về JSON. Tự động dịch Tiếng Anh (dùng English GenZ slang). musicQuery: Tạo từ khóa tìm nhạc bốc, quẩy, hài hước (VD: rap việt remix, edm tiktok) khớp với bức ảnh.`;
   }
 
@@ -773,8 +772,8 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
     // 1. Process the image (Base64)
     const imgData = await getImageBase64(currentImageUrl);
 
-    // 2. Perform multimodal fetch call to Gemini 3.5 Flash
-    const restEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${activeKey}`;
+    // 2. Perform multimodal fetch call to Gemini 3.5 Flash using dynamic key
+    const restEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${userApiKey}`;
     const response = await fetch(restEndpoint, {
       method: 'POST',
       headers: {
@@ -809,7 +808,7 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
 
     const responseData = await response.json();
     
-    // CRITICAL REQUIREMENT 1: BULLETPROOF JSON PARSING
+    // REQUIREMENT 1: BULLETPROOF JSON PARSING
     let rawText = responseData.candidates[0].content.parts[0].text;
     // Remove markdown formatting completely before parsing
     rawText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
@@ -817,10 +816,11 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
     const vibeData = cleanAndParseJSON(rawText);
 
     if (vibeData && vibeData.quoteVN) {
+      // REQUIREMENT 4: SAFE UI UPDATES
       renderQuoteText(vibeData);
       showNotification('✨ Đã làm mới thơ song ngữ & tìm nhạc phù hợp!');
       
-      // CRITICAL REQUIREMENT 4: Only trigger fetchMusic after parsing is successful
+      // Only trigger fetchMusic after parsing is successful
       const queryFromGemini = vibeData.musicQuery || "";
       fetchThemeMusic(currentThemeId, true, queryFromGemini);
       musicFetched = true;
@@ -845,10 +845,7 @@ Hãy phân tích bức ảnh và trả về DUY NHẤT một đối tượng JSO
 
 // --- Credentials Actions ---
 function updateKeyStatusDisplay() {
-  let activeKey = API_KEY;
-  if (!activeKey || activeKey === "YOUR_NEW_API_KEY_HERE") {
-    activeKey = geminiApiKey.trim();
-  }
+  const activeKey = geminiApiKey.trim();
 
   if (activeKey) {
     keyStatusMsg.className = 'text-[10px] font-mono text-emerald-500 flex items-center gap-1 mt-1';
